@@ -29,6 +29,13 @@ public class State {
 
         }
 
+        public Builder(State state){
+            this.currentTime = state.currentTime;
+            this.currentAccountValue = state.currentAccountValue;
+            this.currentProfit = state.currentProfit;
+            this.currentProfitPercentage = state.currentProfitPercentage;
+        }
+
         public Builder currentTime(LocalDate time){
             this.currentTime = time;
             return this;

@@ -12,13 +12,11 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.ModelAndView;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.stream.Collectors;
 
 
 @Controller
@@ -71,8 +69,27 @@ public class BacktestController {
 
         Context response = backtestService.executeStrategy(context, buyAndHold, benchmarkTimeSeriesData, strategyTimeSeriesData);
 
+        // Get initial values
+        double initialAccountValue = response.states.get(0).currentAccountValue;
+        double initialBenchmarkValue = benchmarkTimeSeriesData.entries.get(0).close;
+
+        // Normalize states
+        List<State> normalizedStates = response.states.stream()
+                .map(state -> new State.Builder(state)
+                        .currentAccountValue(((state.currentAccountValue / initialAccountValue) - 1) * 100)
+                        .build())
+                .collect(Collectors.toList());
+
+        // Normalize benchmark entries
+        List<TimeSeriesEntry> normalizedBenchmarkEntries = benchmarkTimeSeriesData.entries.stream()
+                .map(entry -> new TimeSeriesEntry(entry.datetime, 0.00, ((entry.close / initialBenchmarkValue) - 1) * 100, 0.00, 0.00, entry.volume))
+                .collect(Collectors.toList());
+
+        TimeSeriesData normalizedBenchmarkTimeSeriesData = new TimeSeriesData(normalizedBenchmarkEntries);
+
         model.addAttribute("context", response);
-        model.addAttribute("states", response.states);
+        model.addAttribute("states", normalizedStates);
+        model.addAttribute("benchmark", normalizedBenchmarkTimeSeriesData.entries);
 
         return "index";
     }

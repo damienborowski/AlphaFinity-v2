@@ -28,26 +28,43 @@
         /*<![CDATA[*/
         var ctx = document.getElementById('accountValueChart').getContext('2d');
 
-        var states = /*[[${context.states}]]*/ [];
+        var states = /*[[${states}]]*/ [];
+        var benchmark = /*[[${benchmark}]]*/ [];
+
         console.log(states); // Debugging: Log the states to ensure data is being passed correctly
+        console.log(benchmark); // Debugging: Log the benchmark data to ensure it is being passed correctly
 
-        var labels = states.map(state => new Date(state.currentTime.replace(/-/g, '/')));
-        var data = states.map(state => state.currentAccountValue);
+        var stateLabels = states.map(state => new Date(state.currentTime.replace(/-/g, '/')));
+        var stateData = states.map(state => state.currentAccountValue);
 
-        console.log(labels); // Debugging: Log the dates to ensure they're being parsed correctly
-        console.log(data); // Debugging: Log the values to ensure they're correct
+        var benchmarkLabels = benchmark.map(entry => new Date(entry.datetime));
+        var benchmarkData = benchmark.map(entry => entry.close);
+
+        console.log(stateLabels); // Debugging: Log the dates to ensure they're being parsed correctly
+        console.log(stateData); // Debugging: Log the values to ensure they're correct
+        console.log(benchmarkLabels); // Debugging: Log the benchmark dates
+        console.log(benchmarkData); // Debugging: Log the benchmark values
 
         var accountValueChart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Account Value',
-                    data: data,
-                    borderColor: 'rgba(75, 192, 192, 1)',
-                    borderWidth: 1,
-                    fill: false
-                }]
+                labels: stateLabels,
+                datasets: [
+                    {
+                        label: 'Account Value',
+                        data: stateData,
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1,
+                        fill: false
+                    },
+                    {
+                        label: 'Benchmark',
+                        data: benchmarkData,
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1,
+                        fill: false
+                    }
+                ]
             },
             options: {
                 scales: {
@@ -64,7 +81,7 @@
                     y: {
                         title: {
                             display: true,
-                            text: 'Account Value'
+                            text: 'Value'
                         }
                     }
                 }
