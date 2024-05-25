@@ -30,8 +30,8 @@ public class BacktestService {
         validationService.validateTimeframes(benchmarkTimeSeriesData, strategyTimeSeriesData);
 
         Account account = new Account.Builder()
-                .startingCapital(context.account.startingCapital)
-                .currentCapital(context.account.startingCapital)
+                .startingCapital(context.account.initialCapital)
+                .currentCapital(context.account.initialCapital)
                 .build();
 
         Analytics analytics = new Analytics.Builder(context)
@@ -46,9 +46,15 @@ public class BacktestService {
 
         // Running the backtest on the strategy
         strategyTimeSeriesData.entries
-                .forEach(entry -> aContext.updateAndGet(
-                        response -> strategy.execute(response, entry)
-                ));
+                .forEach(entry -> {
+                    aContext.updateAndGet(
+                            response -> strategy.execute(response, entry)
+                    );
+
+                    aContext.updateAndGet(
+                            response -> updateState(response, entry)
+                    );
+                });
 
         // Force close any open trades and enhance analytics
         Context finalContext = enhanceAnalytics(closeOutOpenTrades(aContext, strategyTimeSeriesData.getLastEntry()), benchmarkTimeSeriesData);
@@ -57,13 +63,43 @@ public class BacktestService {
         return finalContext;
     }
 
-    private Context enhanceAnalytics(Context context, TimeSeriesData benchmarkTimeSeriesData){
+    /**
+     * This method is used to keep track of statistics throughout the life-cycle of the backtest. For each entry in the time-series,
+     * we will have statistics about the current state of the account for that given time.
+     * @param context: context
+     * @param entry: time-series entry
+     * @return context
+     */
+    private Context updateState(Context context, TimeSeriesEntry entry){
 
-//        double sharpeRatio = analyticsService.calculateSharpeRatio(context);
-//        double maxDrawdown = analyticsService.calculateMaxDrawdown(context);
-//        double winRate = analyticsService.calculateWinRate(context);
-//        double averageWin = analyticsService.calculateAverageWin(context);
-//        double averageLoss = analyticsService.calculateAverageLoss(context);
+        // This is the total value of our open positions using the current asset price
+        Double currentOpenTransactionValue = context.getActiveTransactions().stream()
+                .mapToDouble(transaction -> transaction.quantity * entry.close)
+                .sum();
+
+        // Calculate the current account value
+        Double currentAccountValue = currentOpenTransactionValue + context.account.currentCapital;
+
+        // Calculate the current profit
+        Double currentProfit = currentAccountValue - context.account.initialCapital;
+
+        // Calculate the current profit percentage
+        Double currentProfitPercentage = (currentProfit / context.account.initialCapital) * 100;
+
+
+        State state = new State.Builder()
+                .currentTime(entry.datetime)
+                .currentAccountValue(currentAccountValue)
+                .currentProfit(currentProfit)
+                .currentProfitPercentage(currentProfitPercentage)
+                .build();
+
+        return new Context.Builder(context)
+                .addState(state)
+                .build();
+    }
+
+    private Context enhanceAnalytics(Context context, TimeSeriesData benchmarkTimeSeriesData){
 
         Analytics analytics = new Analytics.Builder(context)
                 .endingCapital(context.account.currentCapital)
@@ -71,8 +107,15 @@ public class BacktestService {
                 .totalReturn(analyticsService.calculateTotalReturn(context))
                 .totalReturnAsPercentage(analyticsService.calculateTotalReturnAsPercentage(context))
                 .totalTrades(analyticsService.calculateTotalTrades(context))
+                .totalOpeningTrades(analyticsService.calculateTotalOpenTrades(context))
+                .totalClosingTrades(analyticsService.calculateTotalClosedTrades(context))
+                .winRate(analyticsService.calculateWinRate(context))
+                .averageReturn(analyticsService.calculateAverageReturnPerTrade(context))
+                .averageProfit(analyticsService.calculateAverageProfitPerTrade(context))
+                .averageLoss(analyticsService.calculateAverageLossPerTrade(context))
                 .maxDrawdown(analyticsService.calculateMaxDrawdown(context))
                 .alpha(analyticsService.calculateAlpha(context, benchmarkTimeSeriesData))
+                .sharpeRatio(analyticsService.calculateSharpeRatio(context))
                 .build();
 
         return new Context.Builder(context)
@@ -85,10 +128,7 @@ public class BacktestService {
 
         // If there are no open transactions, return
         if(CollectionUtils.isEmpty(context.getActiveTransactions())){
-            return new Context.Builder()
-                    .account(context.account)
-                    .analytics(context.analytics)
-                    .build();
+            return context;
         }
 
         // Individually close out open trades

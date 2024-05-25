@@ -2,16 +2,19 @@ package com.alphafinity.alphafinity.model;
 
 import com.alphafinity.alphafinity.model.enumerations.TransactionOperation;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class Context {
     
     public final Account account;
     public final Analytics analytics;
+    public final List<State> states;
 
     public Context(Builder builder) {
         this.account = builder.account;
         this.analytics = builder.analytics;
+        this.states = builder.states;
     }
 
     public List<Transaction> getTransactions(){
@@ -33,6 +36,7 @@ public class Context {
     public static class Builder {
         private Account account;
         private Analytics analytics;
+        private List<State> states;
 
         public Builder(){
             this.account = new Account.Builder()
@@ -41,11 +45,14 @@ public class Context {
 
             this.analytics = new Analytics.Builder()
                     .build();
+
+            this.states = new ArrayList<>();
         }
 
         public Builder(Context context){
             this.analytics = context.analytics;
             this.account = context.account;
+            this.states = context.states;
         }
 
         public Builder account(Account account){
@@ -55,6 +62,11 @@ public class Context {
 
         public Builder analytics(Analytics analytics){
             this.analytics = analytics;
+            return this;
+        }
+
+        public Builder addState(State state){
+            states.add(state);
             return this;
         }
 

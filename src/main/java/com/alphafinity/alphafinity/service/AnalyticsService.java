@@ -4,11 +4,11 @@ import com.alphafinity.alphafinity.model.Context;
 import com.alphafinity.alphafinity.model.TimeSeriesData;
 import com.alphafinity.alphafinity.model.TimeSeriesEntry;
 import com.alphafinity.alphafinity.model.Transaction;
+import com.alphafinity.alphafinity.model.enumerations.TransactionOperation;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -17,26 +17,46 @@ import java.util.stream.IntStream;
 public class AnalyticsService {
 
     private static final Double BENCHMARK_RETURN = 0.08; // Assuming the benchmark returns 8% per year
+    private static final Double RISK_FREE_RATE = 0.01; // Assuming a risk-free rate of 1%
 
     public double calculateTotalReturn(Context context) {
-        return (context.account.currentCapital - context.account.startingCapital);
+        return (context.account.currentCapital - context.account.initialCapital);
     }
 
     public double calculateTotalReturnMultiplier(Context context) {
-        return (context.account.currentCapital - context.account.startingCapital) / context.account.startingCapital;
+        return (context.account.currentCapital - context.account.initialCapital) / context.account.initialCapital;
     }
 
     public double calculateTotalReturnAsPercentage(Context context) {
-        return (context.account.currentCapital - context.account.startingCapital) / context.account.startingCapital * 100;
+        return (context.account.currentCapital - context.account.initialCapital) / context.account.initialCapital * 100;
     }
 
+    // TODO THE VALUE RETURNED IS INCORRECT
+    public double calculateSharpeRatio(Context context) {
+        List<Double> equityCurve = getEquityCurve(context);
 
-//    public double calculateSharpeRatio(Context context) {
-//        double riskFreeRate = 0.01; // Assuming 1% risk-free rate
-//        double excessReturn = calculateTotalReturn(context) - riskFreeRate;
-//        double standardDeviation = calculateStandardDeviation(context.analytics.getReturns());
-//        return excessReturn / standardDeviation;
-//    }
+        // Calculate daily returns
+        List<Double> returns = IntStream.range(1, equityCurve.size())
+                .mapToObj(i -> (equityCurve.get(i) / equityCurve.get(i - 1)) - 1)
+                .collect(Collectors.toList());
+
+        double averageReturn = returns.stream()
+                .mapToDouble(Double::doubleValue)
+                .average()
+                .orElse(0.0);
+
+        double excessReturn = averageReturn - RISK_FREE_RATE;
+
+        double standardDeviation = calculateStandardDeviation(returns);
+
+        return excessReturn / standardDeviation;
+    }
+
+    public double calculateStandardDeviation(List<Double> returns) {
+        double mean = returns.stream().mapToDouble(Double::doubleValue).average().orElse(0);
+        double variance = returns.stream().mapToDouble(r -> Math.pow(r - mean, 2)).average().orElse(0);
+        return Math.sqrt(variance);
+    }
 
     public double calculateMaxDrawdown(Context context) {
         List<Double> equityCurve = getEquityCurve(context);
@@ -59,34 +79,106 @@ public class AnalyticsService {
                 .collect(Collectors.toList());
     }
 
-//    public double calculateWinRate(Context context) {
-//        long wins = context.analytics.getTrades().stream().filter(trade -> trade.getReturn() > 0).count();
-//        return (double) wins / context.analytics.getTrades().size();
-//    }
+    // Calculates the average profit made / lost per trade
+    public double calculateAverageReturnPerTrade(Context context) {
+        List<Transaction> closedTrades = context.analytics.transactions.stream()
+                .filter(transaction -> transaction.operation.equals(TransactionOperation.CLOSE))
+                .toList();
 
-//    public double calculateAverageWin(Context context) {
-//        return context.getClosedTransactions().stream()
-//                .filter(transaction -> )
-//                .mapToDouble(TradeExecutionResponse::getReturn)
-//                .average()
-//                .orElse(0);
-//    }
+        if (closedTrades.isEmpty()) {
+            return 0.0;
+        }
 
-//    public double calculateAverageLoss(Context context) {
-//        return context.analytics.transactions.stream()
-//                .filter(trade -> trade.getReturn() < 0)
-//                .mapToDouble(TradeExecutionResponse::getReturn)
-//                .average()
-//                .orElse(0);
-//    }
+        double totalProfit = closedTrades.stream()
+                .mapToDouble(transaction -> transaction.profit)
+                .sum();
 
-    // todo this is incorrect. We need to add filter based on either open trades, closed trades or whatever other metric
-    public int calculateTotalTrades(Context context) {
+        return totalProfit / closedTrades.size();
+    }
+
+    // Calculates the average profit made / lost per winning trade
+    public double calculateAverageProfitPerTrade(Context context) {
+        List<Transaction> closedTrades = context.analytics.transactions.stream()
+                .filter(transaction -> transaction.operation.equals(TransactionOperation.CLOSE))
+                .toList();
+
+        if (closedTrades.isEmpty()) {
+            return 0.0;
+        }
+
+        double totalProfit = closedTrades.stream()
+                .mapToDouble(transaction -> transaction.profit) // Assuming getReturn() returns the profit/loss of the trade
+                .filter(returnValue -> returnValue > 0)
+                .sum();
+
+        long numberOfWinningTrades = closedTrades.stream()
+                .filter(transaction -> transaction.profit > 0)
+                .count();
+
+        return numberOfWinningTrades > 0 ? totalProfit / numberOfWinningTrades : 0.0;
+    }
+
+    // Calculates the average profit made / lost per loosing trade
+    public double calculateAverageLossPerTrade(Context context) {
+        List<Transaction> closedTrades = context.analytics.transactions.stream()
+                .filter(transaction -> transaction.operation.equals(TransactionOperation.CLOSE))
+                .toList();
+
+        if (closedTrades.isEmpty()) {
+            return 0.0;
+        }
+
+        double totalLoss = closedTrades.stream()
+                .mapToDouble(transaction -> transaction.profit) // Assuming getReturn() returns the profit/loss of the trade
+                .filter(returnValue -> returnValue < 0)
+                .sum();
+
+        long numberOfLosingTrades = closedTrades.stream()
+                .filter(transaction -> transaction.profit < 0)
+                .count();
+
+        return numberOfLosingTrades > 0 ? totalLoss / numberOfLosingTrades : 0.0;
+    }
+
+    // Calculate total closed trades
+    public Integer calculateTotalClosedTrades(Context context) {
+        return Math.toIntExact(context.analytics.transactions.stream()
+                .filter(transaction -> transaction.operation.equals(TransactionOperation.CLOSE))
+                .count());
+    }
+
+    // Calculate total open trades
+    public Integer calculateTotalOpenTrades(Context context) {
+        return Math.toIntExact(context.analytics.transactions.stream()
+                .filter(transaction -> transaction.operation.equals(TransactionOperation.OPEN))
+                .count());
+    }
+
+    // Calculate total trades (open and closed)
+    public Integer calculateTotalTrades(Context context) {
         return context.analytics.transactions.size();
     }
 
+    // Calculate the win rate as a percentage
+    public double calculateWinRate(Context context) {
+        long totalClosedTrades = context.analytics.transactions.stream()
+                .filter(transaction -> transaction.operation.equals(TransactionOperation.CLOSE))
+                .count();
+
+        if (totalClosedTrades == 0) {
+            return 0.0;
+        }
+
+        long winningTrades = context.analytics.transactions.stream()
+                .filter(transaction -> transaction.operation.equals(TransactionOperation.CLOSE))
+                .filter(transaction -> transaction.profit > 0)
+                .count();
+
+        return ((double) winningTrades / totalClosedTrades) * 100;
+    }
+
     public double calculateAlpha(Context context, TimeSeriesData benchmarkTimeSeriesData) {
-        double startingCapital = context.account.startingCapital;
+        double startingCapital = context.account.initialCapital;
         double endingCapital = context.account.currentCapital;
 
         // Calculate the total period in years TODO FIX LOCAL_DATE_TIME
@@ -120,11 +212,5 @@ public class AnalyticsService {
         double years = daysBetween / 365.25;
 
         return calculateCAGR(startingValue, endingValue, years);
-    }
-
-    public double calculateStandardDeviation(List<Double> returns) {
-        double mean = returns.stream().mapToDouble(Double::doubleValue).average().orElse(0);
-        double variance = returns.stream().mapToDouble(r -> Math.pow(r - mean, 2)).average().orElse(0);
-        return Math.sqrt(variance);
     }
 }

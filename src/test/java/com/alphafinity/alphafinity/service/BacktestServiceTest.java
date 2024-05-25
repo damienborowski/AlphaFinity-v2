@@ -70,7 +70,7 @@ public class BacktestServiceTest {
 
         Context response = backtestService.executeStrategy(context, buyAndHold, backtestData, strategyData);
 
-        Assertions.assertEquals(100, response.account.startingCapital);
+        Assertions.assertEquals(100, response.account.initialCapital);
         Assertions.assertEquals(110, response.account.currentCapital);
         Assertions.assertEquals(0, response.account.activeTrades.size());
         Assertions.assertEquals(0, response.getActiveTransactions().size());
@@ -101,7 +101,7 @@ public class BacktestServiceTest {
 
         Context response = backtestService.executeStrategy(context, buyAndHold, backtestData, strategyData);
 
-        Assertions.assertEquals(100, response.account.startingCapital);
+        Assertions.assertEquals(100, response.account.initialCapital);
         Assertions.assertEquals(110, response.account.currentCapital);
         Assertions.assertEquals(0, response.account.activeTrades.size());
         Assertions.assertEquals(0, response.getActiveTransactions().size());

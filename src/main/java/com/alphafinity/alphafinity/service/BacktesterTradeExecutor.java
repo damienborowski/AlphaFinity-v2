@@ -92,7 +92,7 @@ public class BacktesterTradeExecutor {
                 .addTransaction(newTransaction)
                 .build();
 
-        return new Context.Builder()
+        return new Context.Builder(context)
                 .account(account)
                 .analytics(analytics)
                 .build();

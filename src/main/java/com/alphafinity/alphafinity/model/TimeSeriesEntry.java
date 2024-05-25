@@ -7,7 +7,7 @@ import java.time.LocalDate;
 
 public class TimeSeriesEntry {
     @JsonProperty("date")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd/MM/yyyy")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "MM/dd/yyyy")
     public final LocalDate datetime;
     @JsonProperty("open")
     public final Double open;

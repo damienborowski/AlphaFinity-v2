@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/date-fns"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment/min/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment"></script>
+
+
+</head>
+<body>
+<h1>Account Statistics</h1>
+<div>
+    <p>Starting Capital: <span th:text="${context.account.initialCapital}"></span></p>
+    <p>Current Capital: <span th:text="${context.account.currentCapital}"></span></p>
+    <p>Total Profit: <span th:text="${context.analytics.totalReturn}"></span></p>
+    <p>Total Return: <span th:text="${context.analytics.totalReturnAsPercentage}"></span>%</p>
+    <p>Sharpe Ratio: <span th:text="${context.analytics.sharpeRatio}"></span></p>
+</div>
+
+<h2>Account State Over Time</h2>
+<canvas id="accountValueChart" width="400" height="200"> </canvas>
+
+<script th:inline="javascript">
+        /*<![CDATA[*/
+        var ctx = document.getElementById('accountValueChart').getContext('2d');
+
+        var states = /*[[${context.states}]]*/ [];
+        console.log(states); // Debugging: Log the states to ensure data is being passed correctly
+
+        var labels = states.map(state => new Date(state.currentTime.replace(/-/g, '/')));
+        var data = states.map(state => state.currentAccountValue);
+
+        console.log(labels); // Debugging: Log the dates to ensure they're being parsed correctly
+        console.log(data); // Debugging: Log the values to ensure they're correct
+
+        var accountValueChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Account Value',
+                    data: data,
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1,
+                    fill: false
+                }]
+            },
+            options: {
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'day'
+                        },
+                        title: {
+                            display: true,
+                            text: 'Date'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Account Value'
+                        }
+                    }
+                }
+            }
+        });
+        /*]]>*/
+    </script>
+
+</body>
+</html>

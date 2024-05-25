@@ -15,9 +15,12 @@ public class Analytics {
     public final Double sharpeRatio;
     public final Double maxDrawdown;
     public final Double winRate;
-    public final Double averageWin;
+    public final Double averageProfit;
     public final Double averageLoss;
+    public final Double averageReturn;
     public final Integer totalTrades;
+    public final Integer totalOpeningTrades;
+    public final Integer totalClosingTrades;
     public final Double alpha;
     public final Double standardDeviation;
     public final List<Transaction> transactions;
@@ -33,9 +36,12 @@ public class Analytics {
         this.sharpeRatio = builder.sharpeRatio;
         this.maxDrawdown = builder.maxDrawdown;
         this.winRate = builder.winRate;
-        this.averageWin = builder.averageWin;
+        this.averageProfit = builder.averageProfit;
         this.averageLoss = builder.averageLoss;
+        this.averageReturn = builder.averageReturn;
         this.totalTrades = builder.totalTrades;
+        this.totalOpeningTrades = builder.totalOpeningTrades;
+        this.totalClosingTrades = builder.totalClosingTrades;
         this.alpha = builder.alpha;
         this.standardDeviation = builder.standardDeviation;
         this.transactions = builder.transactions;
@@ -53,9 +59,12 @@ public class Analytics {
         private Double sharpeRatio;
         private Double maxDrawdown;
         private Double winRate;
-        private Double averageWin;
+        private Double averageProfit;
         private Double averageLoss;
+        private Double averageReturn;
         private Integer totalTrades;
+        private Integer totalOpeningTrades;
+        private Integer totalClosingTrades;
         private Double alpha;
         private Double standardDeviation;
         private final List<Transaction> transactions;
@@ -69,7 +78,7 @@ public class Analytics {
             this.endDate = context.analytics.endDate;
             this.transactions = context.analytics.transactions;
 
-            this.startingCapital = context.account.startingCapital;
+            this.startingCapital = context.account.initialCapital;
         }
 
         public Builder addTransaction (Transaction transaction) {
@@ -122,8 +131,13 @@ public class Analytics {
             return this;
         }
 
-        public Builder averageWin (Double averageWin) {
-            this.averageWin = endingCapital;
+        public Builder averageProfit(Double averageProfit) {
+            this.averageProfit = averageProfit;
+            return this;
+        }
+
+        public Builder averageReturn(Double averageReturn) {
+            this.averageReturn = averageReturn;
             return this;
         }
 
@@ -134,6 +148,16 @@ public class Analytics {
 
         public Builder totalTrades (Integer totalTrades) {
             this.totalTrades = totalTrades;
+            return this;
+        }
+
+        public Builder totalOpeningTrades (Integer totalOpeningTrades) {
+            this.totalOpeningTrades = totalOpeningTrades;
+            return this;
+        }
+
+        public Builder totalClosingTrades (Integer totalClosingTrades) {
+            this.totalClosingTrades = totalClosingTrades;
             return this;
         }
 
