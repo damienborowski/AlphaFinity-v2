@@ -3,18 +3,16 @@ package com.alphafinity.alphafinity.strategy.indicator;
 import com.alphafinity.alphafinity.model.TimeSeriesData;
 import com.alphafinity.alphafinity.model.TimeSeriesEntry;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
 
 import static com.alphafinity.alphafinity.utility.IndicatorConstants.RSI_NAME;
 
-
-public class RSI implements Indicator<Double>{
+public class RSI implements Indicator<Double> {
 
     public final Integer period;
 
-    public RSI(Builder builder){
+    public RSI(Builder builder) {
         this.period = builder.period;
     }
 
@@ -26,56 +24,58 @@ public class RSI implements Indicator<Double>{
     @Override
     public Double calculate(TimeSeriesData historicalData, TimeSeriesEntry currentEntry) {
         List<TimeSeriesEntry> entries = historicalData.entries;
-
         int currentIndex = entries.indexOf(currentEntry);
+
         if (currentIndex < period) {
             return 0.0; // Return 0 if there's not enough historical data
         }
 
         // Calculate price changes
-        List<Double> priceChanges = IntStream.range(currentIndex - period + 1, currentIndex)
-                .mapToDouble(i -> entries.get(i).close - entries.get(i + 1).close)
-                .boxed()
-                .toList();
+        double[] priceChanges = IntStream.range(1, entries.size())
+                .mapToDouble(i -> entries.get(i).close - entries.get(i - 1).close)
+                .toArray();
 
-        // Calculate gains and losses using EMA
-        List<Double> gains = new ArrayList<>();
-        List<Double> losses = new ArrayList<>();
-        for (double change : priceChanges) {
-            if (change > 0) {
-                gains.add(change);
-                losses.add(0.0);
+        // Separate gains and losses
+        double[] gains = new double[priceChanges.length];
+        double[] losses = new double[priceChanges.length];
+        for (int i = 0; i < priceChanges.length; i++) {
+            if (priceChanges[i] > 0) {
+                gains[i] = priceChanges[i];
+                losses[i] = 0;
             } else {
-                gains.add(0.0);
-                losses.add(-change);
+                gains[i] = 0;
+                losses[i] = -priceChanges[i];
             }
         }
 
-        double averageGain = calculateEMA(gains, period);
-        double averageLoss = calculateEMA(losses, period);
+        // Calculate initial average gain and loss
+        double averageGain = 0.0;
+        double averageLoss = 0.0;
+        for (int i = 0; i < period; i++) {
+            averageGain += gains[i];
+            averageLoss += losses[i];
+        }
+        averageGain /= period;
+        averageLoss /= period;
+
+        // Apply Wilder's smoothing method
+        for (int i = period; i < currentIndex; i++) {
+            averageGain = (averageGain * (period - 1) + gains[i]) / period;
+            averageLoss = (averageLoss * (period - 1) + losses[i]) / period;
+        }
 
         // Calculate RS and RSI
         double rs = (averageLoss == 0) ? 0.0 : averageGain / averageLoss;
         return 100.0 - (100.0 / (1 + rs));
     }
 
-    private double calculateEMA(List<Double> values, int period) {
-        double smoothingFactor = 12.0 / (period + 1);
-        double ema = values.get(0);
-        for (int i = 1; i < values.size(); i++) {
-            ema = (values.get(i) - ema) * smoothingFactor + ema;
-        }
-        return ema;
-    }
-
     public static class Builder {
         private Integer period;
 
-        public Builder(){
-
+        public Builder() {
         }
 
-        public Builder period(Integer period){
+        public Builder period(Integer period) {
             this.period = period;
             return this;
         }
@@ -83,6 +83,5 @@ public class RSI implements Indicator<Double>{
         public RSI build() {
             return new RSI(this);
         }
-
     }
 }
