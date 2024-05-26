@@ -47,6 +47,8 @@ public class Transaction {
         private Quantity quantityEnum;
 
         public Builder (){
+            this.quantity = 0;
+            this.quantityEnum = Quantity.NOT_SET;
         }
 
         public Builder (Transaction transaction){
@@ -75,11 +77,6 @@ public class Transaction {
             return this;
         }
 
-        public Builder totalCost(Double totalCost){
-            this.totalCost = totalCost;
-            return this;
-        }
-
         public Builder time(LocalDateTime time){
             this.time = time;
             return this;
@@ -101,6 +98,7 @@ public class Transaction {
         }
 
         public Transaction build() {
+            this.totalCost = this.price * this.quantity;
             return new Transaction(this);
         }
     }

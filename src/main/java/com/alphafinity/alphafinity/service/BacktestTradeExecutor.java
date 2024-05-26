@@ -8,13 +8,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 import static com.alphafinity.alphafinity.utility.Constants.EXECUTE_ORDER;
-import static com.alphafinity.alphafinity.utility.Constants.NOT_ENOUGH_ACCOUNT_BALANCE;
 
 @Service
-public class BacktesterTradeExecutor {
+public class BacktestTradeExecutor {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(BacktesterTradeExecutor.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(BacktestTradeExecutor.class);
 
     public Context buy(Context context, Transaction rawOrder) {
 
@@ -25,10 +26,8 @@ public class BacktesterTradeExecutor {
 
         // If order is not valid we can end early
         if(validation.isNotValid){
-            LOGGER.warn(NOT_ENOUGH_ACCOUNT_BALANCE);
-            return new Context.Builder()
-                    .account(context.account)
-                    .analytics(context.analytics)
+//            LOGGER.warn(NOT_ENOUGH_ACCOUNT_BALANCE);
+            return new Context.Builder(context)
                     .build();
         }
 
@@ -49,27 +48,33 @@ public class BacktesterTradeExecutor {
                 .addTransaction(transaction)
                 .build();
 
-        LOGGER.info(String.format(EXECUTE_ORDER, TransactionOperation.OPEN, order.type, order.price, order.time));
-        return new Context.Builder()
+        LOGGER.info(String.format(EXECUTE_ORDER, order.quantity, TransactionOperation.OPEN, order.type, order.price, order.time));
+        return new Context.Builder(context)
                 .account(account)
                 .analytics(analytics)
                 .build();
     }
 
     public Context sell(Context context, Transaction order) {
-        LOGGER.info(String.format(EXECUTE_ORDER, TransactionOperation.OPEN, order.type, order.price, order.time));
-        return new Context.Builder()
-                .account(context.account)
-                .analytics(context.analytics)
+        LOGGER.info(String.format(EXECUTE_ORDER, order.quantity, TransactionOperation.OPEN, order.type, order.price, order.time));
+        return new Context.Builder(context)
                 .build();
     }
 
-    public Context close(Context context, Transaction transactionToClose, Transaction rawOrder){
-        LOGGER.info(String.format(EXECUTE_ORDER, TransactionOperation.CLOSE, rawOrder.type, rawOrder.price, rawOrder.time));
+    public Context close(Context context, List<Transaction> transactionsToClose, Transaction order){
+        return transactionsToClose.stream()
+                .reduce(
+                        context,
+                        (ctx, transaction) -> close(ctx, transaction, order),
+                        (ctx1, ctx2) -> ctx2 // combiner is not used but required for the reduce method
+                );
+    }
 
-        // If transaction is already closed, return
+    public Context close(Context context, Transaction transactionToClose, Transaction rawOrder){
+        // If transaction to close is already closed, return
         if(TransactionOperation.CLOSE.equals(transactionToClose.operation)){
-            LOGGER.warn("Transaction passed in is already closed... It shouldn't of ever happened... Please investigate!");
+            LOGGER.error("Transaction passed in is already closed... It shouldn't of ever happened... Please investigate!");
+            throw new RuntimeException();
         }
 
         // Adds extra calculated fields
@@ -92,6 +97,7 @@ public class BacktesterTradeExecutor {
                 .addTransaction(newTransaction)
                 .build();
 
+        LOGGER.info(String.format(EXECUTE_ORDER, order.quantity, TransactionOperation.CLOSE, order.type, order.price, order.time));
         return new Context.Builder(context)
                 .account(account)
                 .analytics(analytics)
@@ -109,7 +115,7 @@ public class BacktesterTradeExecutor {
     private Valid isValidOrder(Context context, Transaction order){
         // Cost of trade exceeds current account capital
         if(doesTradeOrderExceedAccountCapital(context.account, order)){
-            LOGGER.warn(NOT_ENOUGH_ACCOUNT_BALANCE);
+//            LOGGER.warn(NOT_ENOUGH_ACCOUNT_BALANCE);
             return new Valid(false);
         }
 
@@ -130,34 +136,35 @@ public class BacktesterTradeExecutor {
      */
     private Transaction enhancedOpenOrderDetails(Context context, Transaction order){
         Integer quantity = getOrderQuantity(context, order);
-        Double totalCost = order.price * quantity;
 
         return new Transaction.Builder(order)
                 .quantity(quantity)
                 .quantity(Quantity.NOT_SET)
-                .totalCost(totalCost)
                 .profit(0.00)
                 .build();
     }
 
     private Transaction enhancedCloseOrderDetails(Context context, Transaction orderToClose, Transaction rawOrder){
-        Transaction order = enhancedOpenOrderDetails(context, rawOrder);
-        Integer quantity = getOrderQuantity(context, order);
-        Double totalCost = order.price * quantity;
+        Transaction updatedRawOrder = new Transaction.Builder(orderToClose)
+                .price(rawOrder.price)
+                .time(rawOrder.time)
+                .quantity(rawOrder.quantityEnum)
+                .build();
+
+        Transaction order = enhancedOpenOrderDetails(context, updatedRawOrder);
         Double profit = order.totalCost - orderToClose.totalCost;
 
         return new Transaction.Builder(order)
-                .quantity(quantity)
+                .type(TransactionType.LONG_CLOSE)
+                .status(TransactionOperation.CLOSE)
+                .quantity(orderToClose.quantity)
                 .quantity(Quantity.NOT_SET)
-                .totalCost(totalCost)
                 .profit(profit)
                 .build();
     }
 
-
-
     private Integer getOrderQuantity(Context context, Transaction order){
-        if (order.quantityEnum == null) {
+        if (order.quantity != 0) {
             return order.quantity;
         }
 
@@ -172,7 +179,18 @@ public class BacktesterTradeExecutor {
         return Math.toIntExact(Math.round(Math.floor(context.account.currentCapital / order.price)));
     }
 
-    private Integer getMinOrderQuantity(Context context, Transaction order){
+    /**
+     * Gets the minimum quantity that an order can have. For placing an open order, the minimum is 1 (0 if you have insufficient funds).
+     * For closing an order, minimum wil always be 1.
+     * @param context : context
+     * @param order : order
+     * @return Minimum number of shares
+     */
+    protected Integer getMinOrderQuantity(Context context, Transaction order){
+        if(order.operation.equals(TransactionOperation.CLOSE)){
+            return 1;
+        }
+
         return context.account.currentCapital > order.price ? 1 : 0;
     }
 

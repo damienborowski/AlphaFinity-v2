@@ -1,9 +1,9 @@
-package com.alphafinity.alphafinity.service.strategy;
+package com.alphafinity.alphafinity.strategy;
 
 import com.alphafinity.alphafinity.model.*;
 import com.alphafinity.alphafinity.model.enumerations.Quantity;
 import com.alphafinity.alphafinity.model.enumerations.TransactionType;
-import com.alphafinity.alphafinity.service.BacktesterTradeExecutor;
+import com.alphafinity.alphafinity.service.BacktestTradeExecutor;
 import com.alphafinity.alphafinity.service.Strategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,9 +13,9 @@ import org.springframework.stereotype.Service;
 public class BuyAndHold extends Strategy {
     private static final Logger LOGGER = LoggerFactory.getLogger(BuyAndHold.class);
 
-    private final BacktesterTradeExecutor tradeExecutor;
+    private final BacktestTradeExecutor tradeExecutor;
 
-    public BuyAndHold(BacktesterTradeExecutor tradeExecutor) {
+    public BuyAndHold(BacktestTradeExecutor tradeExecutor) {
         this.tradeExecutor = tradeExecutor;
     }
 
@@ -32,7 +32,7 @@ public class BuyAndHold extends Strategy {
             return tradeExecutor.buy(context, order);
         }
 
-        LOGGER.info("Skipping for date: "+data.datetime);
+//        LOGGER.info("Skipping for date: "+data.datetime);
         return context;
     }
 

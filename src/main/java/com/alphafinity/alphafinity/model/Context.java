@@ -40,7 +40,7 @@ public class Context {
 
         public Builder(){
             this.account = new Account.Builder()
-                    .startingCapital(1000.00)
+                    .initialCapital(1000.00)
                     .build();
 
             this.analytics = new Analytics.Builder()

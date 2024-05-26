@@ -29,7 +29,7 @@ public class Account {
             this.activeTrades = context.account.activeTrades;
         }
 
-        public Builder startingCapital(Double initialCapital){
+        public Builder initialCapital(Double initialCapital){
             this.initialCapital = initialCapital;
             return this;
         }
@@ -39,8 +39,13 @@ public class Account {
             return this;
         }
 
-        public Builder addTrade(Transaction activeTrades){
-            this.activeTrades.add(activeTrades);
+        public Builder addTrade(Transaction activeTrade){
+            this.activeTrades.add(activeTrade);
+            return this;
+        }
+
+        public Builder addTrades(List<Transaction> activeTrades){
+            this.activeTrades.addAll(activeTrades);
             return this;
         }
 

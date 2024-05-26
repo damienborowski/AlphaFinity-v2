@@ -2,35 +2,44 @@ package com.alphafinity.alphafinity.service;
 
 import com.alphafinity.alphafinity.model.*;
 import com.alphafinity.alphafinity.model.enumerations.TransactionType;
+import com.alphafinity.alphafinity.strategy.indicator.EMA;
+import com.alphafinity.alphafinity.strategy.indicator.Indicator;
+import com.alphafinity.alphafinity.strategy.indicator.RSI;
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Service
 public class BacktestService {
     private static final Logger LOGGER = LoggerFactory.getLogger(BacktestService.class);
 
-    private final BacktesterTradeExecutor tradeExecutor;
+    private final BacktestTradeExecutor tradeExecutor;
     private final BacktestValidationService validationService;
     private final AnalyticsService analyticsService;
+    private final IndicatorService indicatorService;
 
-    public BacktestService(BacktesterTradeExecutor tradeExecutor,
+    public BacktestService(BacktestTradeExecutor tradeExecutor,
                            AnalyticsService analyticsService,
-                           BacktestValidationService validationService) {
+                           BacktestValidationService validationService,
+                           IndicatorService indicatorService) {
         this.tradeExecutor = tradeExecutor;
         this.analyticsService = analyticsService;
         this.validationService = validationService;
+        this.indicatorService = indicatorService;
     }
 
-    public Context executeStrategy(Context context, Strategy strategy, TimeSeriesData benchmarkTimeSeriesData, TimeSeriesData strategyTimeSeriesData){
+    public Context executeStrategy(Context context, Strategy strategy, TimeSeriesData benchmarkTimeSeriesData, TimeSeriesData rawStrategyTimeSeriesData) {
         LOGGER.info("[Backtest] Starting backtesting of: " + strategy.strategyName());
-        validationService.validateTimeframes(benchmarkTimeSeriesData, strategyTimeSeriesData);
+        validationService.validateTimeframes(benchmarkTimeSeriesData, rawStrategyTimeSeriesData);
+
+        TimeSeriesData strategyTimeSeriesData = indicatorService.populateDataWithIndicators(rawStrategyTimeSeriesData, initializeIndicators());
 
         Account account = new Account.Builder()
-                .startingCapital(context.account.initialCapital)
+                .initialCapital(context.account.initialCapital)
                 .currentCapital(context.account.initialCapital)
                 .build();
 
@@ -39,25 +48,24 @@ public class BacktestService {
                 .endDate(strategyTimeSeriesData.getLastEntry().datetime)
                 .build();
 
-        AtomicReference<Context> aContext = new AtomicReference<>(new Context.Builder()
+        Context initialContext = new Context.Builder()
                 .account(account)
                 .analytics(analytics)
-                .build());
+                .build();
 
-        // Running the backtest on the strategy
-        strategyTimeSeriesData.entries
-                .forEach(entry -> {
-                    aContext.updateAndGet(
-                            response -> strategy.execute(response, entry)
-                    );
-
-                    aContext.updateAndGet(
-                            response -> updateState(response, entry)
-                    );
-                });
+        // Running the backtest on the strategy using reduce
+        Context updatedContext = strategyTimeSeriesData.entries.stream()
+                .reduce(
+                        initialContext,
+                        (ctx, entry) -> {
+                            Context afterStrategy = strategy.execute(ctx, entry);
+                            return updateState(afterStrategy, entry);
+                        },
+                        (ctx1, ctx2) -> ctx2 // combiner is not used but required for the reduce method
+                );
 
         // Force close any open trades and enhance analytics
-        Context finalContext = enhanceAnalytics(closeOutOpenTrades(aContext, strategyTimeSeriesData.getLastEntry()), benchmarkTimeSeriesData);
+        Context finalContext = enhanceAnalytics(closeOutOpenTrades(updatedContext, strategyTimeSeriesData.getLastEntry()), benchmarkTimeSeriesData);
 
         LOGGER.info("[Backtest] Completed backtesting of strategy");
         return finalContext;
@@ -66,11 +74,12 @@ public class BacktestService {
     /**
      * This method is used to keep track of statistics throughout the life-cycle of the backtest. For each entry in the time-series,
      * we will have statistics about the current state of the account for that given time.
+     *
      * @param context: context
-     * @param entry: time-series entry
+     * @param entry:   time-series entry
      * @return context
      */
-    private Context updateState(Context context, TimeSeriesEntry entry){
+    private Context updateState(Context context, TimeSeriesEntry entry) {
 
         // This is the total value of our open positions using the current asset price
         Double currentOpenTransactionValue = context.getActiveTransactions().stream()
@@ -99,7 +108,22 @@ public class BacktestService {
                 .build();
     }
 
-    private Context enhanceAnalytics(Context context, TimeSeriesData benchmarkTimeSeriesData){
+    private List<Indicator<?>> initializeIndicators() {
+        Indicator<Double> rsi = new RSI.Builder()
+                .period(14)  // Could maybe make this a config value?
+                .build();
+
+        Indicator<Double> ema = new EMA.Builder()
+                .period(100)
+                .build();
+
+        return List.of(
+                rsi,
+                ema
+        );
+    }
+
+    private Context enhanceAnalytics(Context context, TimeSeriesData benchmarkTimeSeriesData) {
 
         Analytics analytics = new Analytics.Builder(context)
                 .endingCapital(context.account.currentCapital)
@@ -123,28 +147,29 @@ public class BacktestService {
                 .build();
     }
 
-    private Context closeOutOpenTrades(AtomicReference<Context> aContext, TimeSeriesEntry data){
-        Context context = aContext.get();
-
+    private Context closeOutOpenTrades(Context currentContext, TimeSeriesEntry data) {
         // If there are no open transactions, return
-        if(CollectionUtils.isEmpty(context.getActiveTransactions())){
-            return context;
+        if (CollectionUtils.isEmpty(currentContext.getActiveTransactions())) {
+            return currentContext;
         }
 
-        // Individually close out open trades
-        context.getActiveTransactions()
-                .forEach(transaction -> {
-                    Transaction order = new Transaction.Builder()
-                            .type(TransactionType.LONG_CLOSE)
-                            .price(data.close)
-                            .time(data.datetime.atStartOfDay())
-                            .quantity(transaction.quantity)
-                            .build();
+        // Individually close out open trades by reducing the active transactions into a new context
+        Context updatedContext = currentContext.getActiveTransactions().stream()
+                .reduce(
+                        currentContext,
+                        (ctx, transaction) -> {
+                            Transaction order = new Transaction.Builder()
+                                    .type(TransactionType.LONG_CLOSE)
+                                    .price(data.close)
+                                    .time(data.datetime.atStartOfDay())
+                                    .quantity(transaction.quantity)
+                                    .build();
 
-                    aContext.updateAndGet(
-                            response -> tradeExecutor.close(response, transaction, order));
-                });
-
-        return aContext.get();
+                            Context c = tradeExecutor.close(ctx, transaction, order);
+                            return c;
+                        },
+                        (ctx1, ctx2) -> ctx2 // combiner is not used but required for the reduce method
+                );
+        return updatedContext;
     }
 }

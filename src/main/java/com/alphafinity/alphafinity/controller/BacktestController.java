@@ -3,6 +3,8 @@ package com.alphafinity.alphafinity.controller;
 import com.alphafinity.alphafinity.model.*;
 import com.alphafinity.alphafinity.service.BacktestService;
 import com.alphafinity.alphafinity.service.Strategy;
+import com.alphafinity.alphafinity.strategy.BuyAndHold;
+import com.alphafinity.alphafinity.strategy.EMAStrategy;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.HttpStatus;
@@ -24,14 +26,17 @@ import java.util.stream.Collectors;
 public class BacktestController {
 
     private final BacktestService backtestService;
-    private final Strategy buyAndHold;
+    private final BuyAndHold buyAndHold;
+    private final EMAStrategy ema;
     private final ObjectMapper mapper;
 
     public BacktestController(BacktestService backtestService,
-                              Strategy buyAndHold,
+                              BuyAndHold buyAndHold,
+                              EMAStrategy ema,
                               ObjectMapper mapper) {
         this.backtestService = backtestService;
         this.buyAndHold = buyAndHold;
+        this.ema = ema;
         this.mapper = mapper;
     }
 
@@ -67,7 +72,7 @@ public class BacktestController {
         TimeSeriesData benchmarkTimeSeriesData = new TimeSeriesData(benchmarkEntries);
         TimeSeriesData strategyTimeSeriesData = new TimeSeriesData(strategyEntries);
 
-        Context response = backtestService.executeStrategy(context, buyAndHold, benchmarkTimeSeriesData, strategyTimeSeriesData);
+        Context response = backtestService.executeStrategy(context, ema, benchmarkTimeSeriesData, strategyTimeSeriesData);
 
         // Get initial values
         double initialAccountValue = response.states.get(0).currentAccountValue;
@@ -82,7 +87,7 @@ public class BacktestController {
 
         // Normalize benchmark entries
         List<TimeSeriesEntry> normalizedBenchmarkEntries = benchmarkTimeSeriesData.entries.stream()
-                .map(entry -> new TimeSeriesEntry(entry.datetime, 0.00, ((entry.close / initialBenchmarkValue) - 1) * 100, 0.00, 0.00, entry.volume))
+                .map(entry -> new TimeSeriesEntry(entry.datetime, 0.00, ((entry.close / initialBenchmarkValue) - 1) * 100, 0.00, 0.00, entry.volume, 0.00, 0.00))
                 .collect(Collectors.toList());
 
         TimeSeriesData normalizedBenchmarkTimeSeriesData = new TimeSeriesData(normalizedBenchmarkEntries);
