@@ -161,7 +161,7 @@ public class BacktestService {
                             Transaction order = new Transaction.Builder()
                                     .type(TransactionType.LONG_CLOSE)
                                     .price(data.close)
-                                    .time(data.datetime.atStartOfDay())
+                                    .time(data.datetime)
                                     .quantity(transaction.quantity)
                                     .build();
 

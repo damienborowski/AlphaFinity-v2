@@ -15,7 +15,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -50,7 +50,7 @@ public class BacktestTradeExecutorTest {
         Transaction order = new Transaction.Builder()
                 .type(TransactionType.LONG_OPEN)
                 .status(TransactionOperation.OPEN)
-                .time(LocalDate.of(2020, 1, 8).atStartOfDay())
+                .time(LocalDateTime.of(2020, 1, 8))
                 .price(10.00)
                 .quantity(Quantity.MAX)
                 .build();
@@ -72,7 +72,7 @@ public class BacktestTradeExecutorTest {
         Transaction transaction = new Transaction.Builder()
                 .type(TransactionType.LONG_OPEN)
                 .status(TransactionOperation.OPEN)
-                .time(LocalDate.of(2020, 1, 8).atStartOfDay())
+                .time(LocalDateTime.of(2020, 1, 8))
                 .price(10.00)
                 .quantity(10)
                 .build();
@@ -92,7 +92,7 @@ public class BacktestTradeExecutorTest {
                 .build();
 
         Transaction order = new Transaction.Builder(transaction)
-                .time(LocalDate.of(2020, 1, 8).atStartOfDay())
+                .time(LocalDateTime.of(2020, 1, 8))
                 .price(20.00)
                 .build();
 
@@ -113,7 +113,7 @@ public class BacktestTradeExecutorTest {
         Transaction transaction1 = new Transaction.Builder()
                 .type(TransactionType.LONG_OPEN)
                 .status(TransactionOperation.OPEN)
-                .time(LocalDate.of(2020, 1, 8).atStartOfDay())
+                .time(LocalDateTime.of(2020, 1, 8))
                 .price(10.00)
                 .quantity(9)
                 .build();
@@ -121,7 +121,7 @@ public class BacktestTradeExecutorTest {
         Transaction transaction2 = new Transaction.Builder()
                 .type(TransactionType.LONG_OPEN)
                 .status(TransactionOperation.OPEN)
-                .time(LocalDate.of(2020, 1, 8).atStartOfDay())
+                .time(LocalDateTime.of(2020, 1, 8))
                 .price(5.0)
                 .quantity(2)
                 .build();
@@ -143,7 +143,7 @@ public class BacktestTradeExecutorTest {
                 .build();
 
         Transaction order = new Transaction.Builder()
-                .time(LocalDate.of(2020, 1, 8).atStartOfDay())
+                .time(LocalDateTime.of(2020, 1, 8))
                 .price(20.00)
                 .quantity(Quantity.MAX)
                 .build();

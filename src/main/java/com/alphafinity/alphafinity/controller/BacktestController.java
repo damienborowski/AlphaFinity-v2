@@ -5,6 +5,7 @@ import com.alphafinity.alphafinity.service.BacktestService;
 import com.alphafinity.alphafinity.service.Strategy;
 import com.alphafinity.alphafinity.strategy.BuyAndHold;
 import com.alphafinity.alphafinity.strategy.EMAStrategy;
+import com.alphafinity.alphafinity.strategy.RSIStrategy;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.HttpStatus;
@@ -28,15 +29,18 @@ public class BacktestController {
     private final BacktestService backtestService;
     private final BuyAndHold buyAndHold;
     private final EMAStrategy ema;
+    private final RSIStrategy rsiStrategy;
     private final ObjectMapper mapper;
 
     public BacktestController(BacktestService backtestService,
                               BuyAndHold buyAndHold,
                               EMAStrategy ema,
+                              RSIStrategy rsiStrategy,
                               ObjectMapper mapper) {
         this.backtestService = backtestService;
         this.buyAndHold = buyAndHold;
         this.ema = ema;
+        this.rsiStrategy = rsiStrategy;
         this.mapper = mapper;
     }
 
@@ -61,8 +65,8 @@ public class BacktestController {
 
         ClassLoader classloader = Thread.currentThread().getContextClassLoader();
 
-        InputStream inputStreamBenchmark = classloader.getResourceAsStream("spy_daily.json");
-        InputStream inputStreamStrategy = classloader.getResourceAsStream("spy_daily.json");
+        InputStream inputStreamBenchmark = classloader.getResourceAsStream("spy_hourly.json");
+        InputStream inputStreamStrategy = classloader.getResourceAsStream("spy_hourly.json");
 
         Context context = new Context.Builder()
                 .build();
@@ -72,7 +76,7 @@ public class BacktestController {
         TimeSeriesData benchmarkTimeSeriesData = new TimeSeriesData(benchmarkEntries);
         TimeSeriesData strategyTimeSeriesData = new TimeSeriesData(strategyEntries);
 
-        Context response = backtestService.executeStrategy(context, ema, benchmarkTimeSeriesData, strategyTimeSeriesData);
+        Context response = backtestService.executeStrategy(context, rsiStrategy, benchmarkTimeSeriesData, strategyTimeSeriesData);
 
         // Get initial values
         double initialAccountValue = response.states.get(0).currentAccountValue;

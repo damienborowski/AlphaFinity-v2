@@ -182,8 +182,8 @@ public class AnalyticsService {
         double endingCapital = context.account.currentCapital;
 
         // Calculate the total period in years TODO FIX LOCAL_DATE_TIME
-        LocalDateTime startDate = context.analytics.startDate.atStartOfDay();
-        LocalDateTime endDate = context.analytics.endDate.atStartOfDay();
+        LocalDateTime startDate = context.analytics.startDate;
+        LocalDateTime endDate = context.analytics.endDate;
 
         long daysBetween = Duration.between(startDate, endDate).toDays();
         double years = daysBetween / 365.25;
@@ -205,8 +205,8 @@ public class AnalyticsService {
         double startingValue = entries.get(0).close;
         double endingValue = entries.get(entries.size() - 1).close;
 
-        LocalDateTime startDate = entries.get(0).datetime.atStartOfDay();
-        LocalDateTime endDate = entries.get(entries.size() - 1).datetime.atStartOfDay();
+        LocalDateTime startDate = entries.get(0).datetime;
+        LocalDateTime endDate = entries.get(entries.size() - 1).datetime;
 
         long daysBetween = Duration.between(startDate, endDate).toDays();
         double years = daysBetween / 365.25;

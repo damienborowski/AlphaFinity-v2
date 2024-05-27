@@ -51,7 +51,7 @@ public class EMAStrategy extends Strategy {
                 .type(TransactionType.LONG_OPEN)
                 .price(data.close)
                 .quantity(Quantity.MAX)
-                .time(data.datetime.atStartOfDay())
+                .time(data.datetime)
                 .build();
         return tradeExecutor.buy(context, order);
     }
@@ -61,7 +61,7 @@ public class EMAStrategy extends Strategy {
                 .type(TransactionType.LONG_CLOSE)
                 .price(data.close)
                 .quantity(Quantity.MAX)
-                .time(data.datetime.atStartOfDay())
+                .time(data.datetime)
                 .build();
         return tradeExecutor.close(context, transactions, order);
     }

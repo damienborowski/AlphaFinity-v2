@@ -1,18 +1,16 @@
 package com.alphafinity.alphafinity.model;
 
-import com.alphafinity.alphafinity.strategy.indicator.RSI;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.sql.Time;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import static com.alphafinity.alphafinity.utility.IndicatorConstants.*;
 
 public class TimeSeriesEntry {
     @JsonProperty("date")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "MM/dd/yyyy")
-    public final LocalDate datetime;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd/MM/yyyy HH:mm:ss")
+    public final LocalDateTime datetime;
     @JsonProperty("open")
     public final Double open;
     @JsonProperty("close")
@@ -28,7 +26,7 @@ public class TimeSeriesEntry {
     @JsonProperty(EMA_NAME)
     public final Double ema;
 
-    public TimeSeriesEntry(@JsonProperty("date") @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd/MM/yyyy") LocalDate datetime,
+    public TimeSeriesEntry(@JsonProperty("date") @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd/MM/yyyy HH:mm:ss") LocalDateTime datetime,
                            @JsonProperty("open") Double open,
                            @JsonProperty("close") Double close,
                            @JsonProperty("high") Double high,
@@ -58,7 +56,7 @@ public class TimeSeriesEntry {
     }
 
     public static class Builder {
-        private LocalDate datetime;
+        private LocalDateTime datetime;
         private Double open;
         private Double close;
         private Double high;
@@ -81,7 +79,7 @@ public class TimeSeriesEntry {
             this.rsi = entry.rsi;
         }
 
-        public Builder datetime(LocalDate datetime){
+        public Builder datetime(LocalDateTime datetime){
             this.datetime = datetime;
             return this;
         }

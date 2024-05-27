@@ -1,14 +1,14 @@
 package com.alphafinity.alphafinity.model;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Analytics {
     public final Double startingCapital;
     public final Double endingCapital;
-    public final LocalDate startDate;
-    public final LocalDate endDate;
+    public final LocalDateTime startDate;
+    public final LocalDateTime endDate;
     public final Double totalReturn;
     public final Double totalReturnMultiplier;
     public final Double totalReturnAsPercentage;
@@ -51,8 +51,8 @@ public class Analytics {
 
         private Double startingCapital;
         private Double endingCapital;
-        private LocalDate startDate;
-        private LocalDate endDate;
+        private LocalDateTime startDate;
+        private LocalDateTime endDate;
         private Double totalReturn;
         private Double totalReturnMultiplier;
         private Double totalReturnAsPercentage;
@@ -91,12 +91,12 @@ public class Analytics {
             return this;
         }
 
-        public Builder startDate (LocalDate startDate) {
+        public Builder startDate (LocalDateTime startDate) {
             this.startDate = startDate;
             return this;
         }
 
-        public Builder endDate (LocalDate endDate) {
+        public Builder endDate (LocalDateTime endDate) {
             this.endDate = endDate;
             return this;
         }

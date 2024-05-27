@@ -2,12 +2,12 @@ package com.alphafinity.alphafinity.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public class State {
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "MM/dd/yyyy")
-    public final LocalDate currentTime;
+    public final LocalDateTime currentTime;
     public final Double currentAccountValue;
     public final Double currentProfit;
     public final Double currentProfitPercentage;
@@ -20,7 +20,7 @@ public class State {
     }
 
     public static class Builder {
-        private LocalDate currentTime;
+        private LocalDateTime currentTime;
         private Double currentAccountValue;
         private Double currentProfit;
         private Double currentProfitPercentage;
@@ -36,7 +36,7 @@ public class State {
             this.currentProfitPercentage = state.currentProfitPercentage;
         }
 
-        public Builder currentTime(LocalDate time){
+        public Builder currentTime(LocalDateTime time){
             this.currentTime = time;
             return this;
         }

@@ -8,7 +8,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.alphafinity.alphafinity.utility.Constants.EXECUTE_ORDER;
 
@@ -102,6 +104,28 @@ public class BacktestTradeExecutor {
                 .account(account)
                 .analytics(analytics)
                 .build();
+    }
+
+    public Context takeProfits(Context context, TimeSeriesEntry entry, double threshold, Transaction order) {
+        List<Transaction> transactionsToClose = context.getActiveTransactions().stream()
+                .filter(transaction -> calculateOpenProfitPercentage(transaction, entry.close) >= threshold)
+                .peek(transaction -> LOGGER.info("Taking profits on transaction: "))
+                .collect(Collectors.toList());
+
+        // Close transactions and update context
+        if (!transactionsToClose.isEmpty()) {
+            return close(context, transactionsToClose, order);
+        }
+
+        return context;
+    }
+
+    private double calculateOpenProfitPercentage(Transaction transaction, double currentPrice) {
+        double entryPrice = transaction.price;
+        double quantity = transaction.quantity;
+        double currentProfit = (currentPrice - entryPrice) * quantity;
+        double entryValue = entryPrice * quantity;
+        return (currentProfit / entryValue) * 100.0;
     }
 
     /**

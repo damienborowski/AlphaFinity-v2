@@ -25,7 +25,7 @@ public class BuyAndHold extends Strategy {
                 .type(TransactionType.LONG_OPEN)
                 .price(data.close)
                 .quantity(Quantity.MAX)
-                .time(data.datetime.atStartOfDay()) //TODO CHANGE TO DATETIME
+                .time(data.datetime) //TODO CHANGE TO DATETIME
                 .build();
 
         if(context.getActiveTransactions().isEmpty()){
