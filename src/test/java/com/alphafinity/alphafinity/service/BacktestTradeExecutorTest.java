@@ -50,7 +50,7 @@ public class BacktestTradeExecutorTest {
         Transaction order = new Transaction.Builder()
                 .type(TransactionType.LONG_OPEN)
                 .status(TransactionOperation.OPEN)
-                .time(LocalDateTime.of(2020, 1, 8))
+                .time(LocalDateTime.of(2020, 1, 8, 1, 1, 1))
                 .price(10.00)
                 .quantity(Quantity.MAX)
                 .build();
@@ -72,7 +72,7 @@ public class BacktestTradeExecutorTest {
         Transaction transaction = new Transaction.Builder()
                 .type(TransactionType.LONG_OPEN)
                 .status(TransactionOperation.OPEN)
-                .time(LocalDateTime.of(2020, 1, 8))
+                .time(LocalDateTime.of(2020, 1, 8, 1, 1, 1))
                 .price(10.00)
                 .quantity(10)
                 .build();
@@ -92,7 +92,7 @@ public class BacktestTradeExecutorTest {
                 .build();
 
         Transaction order = new Transaction.Builder(transaction)
-                .time(LocalDateTime.of(2020, 1, 8))
+                .time(LocalDateTime.of(2020, 1, 8, 1, 1, 1))
                 .price(20.00)
                 .build();
 
@@ -113,7 +113,7 @@ public class BacktestTradeExecutorTest {
         Transaction transaction1 = new Transaction.Builder()
                 .type(TransactionType.LONG_OPEN)
                 .status(TransactionOperation.OPEN)
-                .time(LocalDateTime.of(2020, 1, 8))
+                .time(LocalDateTime.of(2020, 1, 8, 1, 1, 1))
                 .price(10.00)
                 .quantity(9)
                 .build();
@@ -121,7 +121,7 @@ public class BacktestTradeExecutorTest {
         Transaction transaction2 = new Transaction.Builder()
                 .type(TransactionType.LONG_OPEN)
                 .status(TransactionOperation.OPEN)
-                .time(LocalDateTime.of(2020, 1, 8))
+                .time(LocalDateTime.of(2020, 1, 8, 1, 1, 1))
                 .price(5.0)
                 .quantity(2)
                 .build();
@@ -143,7 +143,7 @@ public class BacktestTradeExecutorTest {
                 .build();
 
         Transaction order = new Transaction.Builder()
-                .time(LocalDateTime.of(2020, 1, 8))
+                .time(LocalDateTime.of(2020, 1, 8, 1, 1, 1))
                 .price(20.00)
                 .quantity(Quantity.MAX)
                 .build();

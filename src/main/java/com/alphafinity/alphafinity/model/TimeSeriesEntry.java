@@ -1,7 +1,8 @@
 package com.alphafinity.alphafinity.model;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
+import com.alphafinity.alphafinity.model.deserializer.LocalDateTimeDeserializer;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import java.time.LocalDateTime;
 
@@ -9,7 +10,7 @@ import static com.alphafinity.alphafinity.utility.IndicatorConstants.*;
 
 public class TimeSeriesEntry {
     @JsonProperty("date")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd/MM/yyyy HH:mm:ss")
+    @JsonDeserialize(using = LocalDateTimeDeserializer.class)
     public final LocalDateTime datetime;
     @JsonProperty("open")
     public final Double open;
@@ -26,7 +27,7 @@ public class TimeSeriesEntry {
     @JsonProperty(EMA_NAME)
     public final Double ema;
 
-    public TimeSeriesEntry(@JsonProperty("date") @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd/MM/yyyy HH:mm:ss") LocalDateTime datetime,
+    public TimeSeriesEntry(@JsonProperty("date") @JsonDeserialize(using = LocalDateTimeDeserializer.class) LocalDateTime datetime,
                            @JsonProperty("open") Double open,
                            @JsonProperty("close") Double close,
                            @JsonProperty("high") Double high,
