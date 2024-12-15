@@ -86,6 +86,11 @@ public class Analytics {
             return this;
         }
 
+        public Builder startingCapital (Double startingCapital) {
+            this.startingCapital = startingCapital;
+            return this;
+        }
+
         public Builder endingCapital (Double endingCapital) {
             this.endingCapital = endingCapital;
             return this;

@@ -11,7 +11,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
 @Service
 public class BacktestService {
@@ -65,7 +64,7 @@ public class BacktestService {
                 );
 
         // Force close any open trades and enhance analytics
-        Context finalContext = enhanceAnalytics(closeOutOpenTrades(updatedContext, strategyTimeSeriesData.getLastEntry()), benchmarkTimeSeriesData);
+        Context finalContext = generateAnalytics(closeOutOpenTrades(updatedContext, strategyTimeSeriesData.getLastEntry()), benchmarkTimeSeriesData);
 
         LOGGER.info("[Backtest] Completed backtesting of strategy");
         return finalContext;
@@ -123,9 +122,9 @@ public class BacktestService {
         );
     }
 
-    private Context enhanceAnalytics(Context context, TimeSeriesData benchmarkTimeSeriesData) {
+    private Context generateAnalytics(Context context, TimeSeriesData benchmarkTimeSeriesData) {
 
-        Analytics analytics = new Analytics.Builder(context)
+        Analytics strategyAnalytics = new Analytics.Builder(context)
                 .endingCapital(context.account.currentCapital)
                 .totalReturnMultiplier(analyticsService.calculateTotalReturnMultiplier(context))
                 .totalReturn(analyticsService.calculateTotalReturn(context))
@@ -142,8 +141,13 @@ public class BacktestService {
                 .sharpeRatio(analyticsService.calculateSharpeRatio(context))
                 .build();
 
+        Analytics benchmarkAnalytics = new Analytics.Builder()
+                .startingCapital(context.account.initialCapital)
+                .build();
+
         return new Context.Builder(context)
-                .analytics(analytics)
+                .analytics(strategyAnalytics)
+                .benchmarkAnalytics(benchmarkAnalytics)
                 .build();
     }
 

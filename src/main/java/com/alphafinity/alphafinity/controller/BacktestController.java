@@ -57,7 +57,7 @@ public class BacktestController {
         TimeSeriesData strategyTimeSeriesData = new TimeSeriesData(strategyEntries);
 
         return ResponseEntity.status(HttpStatus.OK).contentType(MediaType.APPLICATION_JSON)
-                .body(backtestService.executeStrategy(context, buyAndHold, benchmarkTimeSeriesData, strategyTimeSeriesData));
+                .body(backtestService.executeStrategy(context, rsiStrategy, benchmarkTimeSeriesData, strategyTimeSeriesData));
     }
 
     @GetMapping("/dashboard")

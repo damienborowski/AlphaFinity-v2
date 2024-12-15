@@ -9,11 +9,13 @@ public class Context {
     
     public final Account account;
     public final Analytics analytics;
+    public final Analytics benchmarkAnalytics;
     public final List<State> states;
 
     public Context(Builder builder) {
         this.account = builder.account;
         this.analytics = builder.analytics;
+        this.benchmarkAnalytics = builder.benchmarkAnalytics;
         this.states = builder.states;
     }
 
@@ -36,6 +38,7 @@ public class Context {
     public static class Builder {
         private Account account;
         private Analytics analytics;
+        private Analytics benchmarkAnalytics;
         private List<State> states;
 
         public Builder(){
@@ -62,6 +65,11 @@ public class Context {
 
         public Builder analytics(Analytics analytics){
             this.analytics = analytics;
+            return this;
+        }
+
+        public Builder benchmarkAnalytics(Analytics benchmarkAnalytics){
+            this.benchmarkAnalytics = benchmarkAnalytics;
             return this;
         }
 
